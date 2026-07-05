@@ -1,0 +1,85 @@
+name: CWD Cron Heartbeat
+
+# WHY THIS EXISTS
+# Vercel's built-in cron scheduler stopped firing the team.canadianwebdesigns.ca
+# scheduled jobs (lastRunAt: never on all of them). The app + endpoints work fine;
+# only the trigger is broken. This workflow is an EXTERNAL trigger ("heartbeat"):
+# on each schedule below it curls the matching endpoint, exactly mirroring vercel.json.
+# Nothing in the app changes. Endpoints are idempotent (Mongo watermarks + step-dedup),
+# so an early/duplicate poke is safe.
+#
+# Schedules are UTC (same as Vercel crons).
+
+on:
+  schedule:
+    - cron: '0 3 * * *'    # leads-digest
+    - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
+    - cron: '0 10 * * *'   # ads-daily-report
+    - cron: '0 11 * * *'   # cwd-seo-report
+    - cron: '0 12 * * *'   # tvtc-seo
+    - cron: '0 13 * * *'   # pnl + qbo-paid-sync
+    - cron: '0 14 * * *'   # renewal-invoices
+    - cron: '0 15 * * *'   # cloud-pharmacy-invoice-guard
+    - cron: '0 13 1 * *'   # cloud-pharmacy-invoice (1st of month)
+    - cron: '*/5 * * * *'  # qbo-payment-discord (Vercel was */3; GitHub min is 5m)
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Exact endpoint path to hit now, e.g. /api/cron/qbo-paid-sync?dry=true (blank = safe connectivity check)'
+        required: false
+        default: ''
+
+concurrency:
+  group: heartbeat-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  poke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger scheduled job(s)
+        env:
+          SCHED: ${{ github.event.schedule }}
+          DISPATCH_TARGET: ${{ github.event.inputs.target }}
+        run: |
+          set -u
+          BASE="https://team.canadianwebdesigns.ca"
+          FAIL=0
+
+          poke() {
+            path="$1"
+            echo "==> POST/GET $path"
+            code=$(curl -sS --max-time 60 -o /tmp/body.txt -w "%{http_code}" \
+                   -H "x-vercel-cron: 1" "$BASE$path" || echo "000")
+            echo "    HTTP $code"
+            echo "    $(head -c 300 /tmp/body.txt | tr '\n' ' ')"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              echo "::error::$path returned $code"
+              FAIL=1
+            fi
+          }
+
+          case "$SCHED" in
+            "0 3 * * *")    poke "/api/cron/leads-digest" ;;
+            "0 9 * * 1")    poke "/api/clients/renewal-alerts" ;;
+            "0 10 * * *")   poke "/api/cron/ads-daily-report" ;;
+            "0 11 * * *")   poke "/api/cron/cwd-seo-report" ;;
+            "0 12 * * *")   poke "/api/cron/tvtc-seo" ;;
+            "0 13 * * *")   poke "/api/cron/pnl"; poke "/api/cron/qbo-paid-sync" ;;
+            "0 14 * * *")   poke "/api/cron/renewal-invoices" ;;
+            "0 15 * * *")   poke "/api/cron/cloud-pharmacy-invoice-guard" ;;
+            "0 13 1 * *")   poke "/api/cron/cloud-pharmacy-invoice" ;;
+            "*/5 * * * *")  poke "/api/cron/qbo-payment-discord" ;;
+            "")
+              # Manual run. Only hit exactly what the operator asks for.
+              if [ -n "$DISPATCH_TARGET" ]; then
+                poke "$DISPATCH_TARGET"
+              else
+                echo "No target given -> safe connectivity check (dry, no side effects)."
+                poke "/api/cron/qbo-payment-discord?dry=true"
+              fi
+              ;;
+            *) echo "::warning::Unrecognized schedule '$SCHED' - nothing to do." ;;
+          esac
+
+          exit $FAIL
