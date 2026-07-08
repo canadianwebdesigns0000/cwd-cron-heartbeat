@@ -12,11 +12,10 @@ name: CWD Cron Heartbeat
 
 on:
   schedule:
-    - cron: '0 3 * * *'    # leads-digest
     - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
     - cron: '0 10 * * *'   # ads-daily-report
     - cron: '0 11 * * *'   # cwd-seo-report
-    - cron: '0 12 * * *'   # tvtc-seo
+    - cron: '0 12 * * *'   # tvtc-seo + leads-digest (5PM PKT)
     - cron: '0 13 * * *'   # pnl + qbo-paid-sync
     - cron: '0 14 * * *'   # renewal-invoices
     - cron: '0 15 * * *'   # cloud-pharmacy-invoice-guard
@@ -60,11 +59,10 @@ jobs:
           }
 
           case "$SCHED" in
-            "0 3 * * *")    poke "/api/cron/leads-digest" ;;
             "0 9 * * 1")    poke "/api/clients/renewal-alerts" ;;
             "0 10 * * *")   poke "/api/cron/ads-daily-report" ;;
             "0 11 * * *")   poke "/api/cron/cwd-seo-report" ;;
-            "0 12 * * *")   poke "/api/cron/tvtc-seo" ;;
+            "0 12 * * *")   poke "/api/cron/tvtc-seo"; poke "/api/cron/leads-digest" ;;
             "0 13 * * *")   poke "/api/cron/pnl"; poke "/api/cron/qbo-paid-sync" ;;
             # GATED TO DRY 2026-07-07: computes the action list but creates/sends NOTHING.
             # Remove '?dry=true' to go live again.
