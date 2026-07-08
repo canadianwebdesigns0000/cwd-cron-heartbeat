@@ -64,9 +64,10 @@ jobs:
             "0 11 * * *")   poke "/api/cron/cwd-seo-report" ;;
             "0 12 * * *")   poke "/api/cron/tvtc-seo"; poke "/api/cron/leads-digest" ;;
             "0 13 * * *")   poke "/api/cron/pnl"; poke "/api/cron/qbo-paid-sync" ;;
-            # GATED TO DRY 2026-07-07: computes the action list but creates/sends NOTHING.
-            # Remove '?dry=true' to go live again.
-            "0 14 * * *")   poke "/api/cron/renewal-invoices?dry=true" ;;
+            # 2026-07-09: billing is OFF (CRON_ENABLED=false in the app). This daily poke runs
+            # the safe multi-source RECONCILE (QB+Wave+PayPal+clients-DB status sync;
+            # creates nothing, emails no one) so the renewals board self-heals.
+            "0 14 * * *")   poke "/api/cron/renewal-invoices?reconcile=true" ;;
             "0 15 * * *")   poke "/api/cron/cloud-pharmacy-invoice-guard" ;;
             "0 13 1 * *")   poke "/api/cron/cloud-pharmacy-invoice" ;;
             "*/5 * * * *")  poke "/api/cron/qbo-payment-discord" ;;
