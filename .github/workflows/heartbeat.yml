@@ -15,7 +15,8 @@ on:
     - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
     - cron: '0 10 * * *'   # ads-daily-report
     - cron: '0 11 * * *'   # cwd-seo-report
-    - cron: '0 12 * * *'   # tvtc-seo + leads-digest + qbo-paid-sync (5PM PKT: add clients/services)
+    - cron: '0 12 * * *'   # tvtc-seo + leads-digest (5PM PKT)
+    - cron: '0 0,12-23 * * *' # qbo-paid-sync HOURLY 5PM-5AM PKT (add/update clients+services)
     - cron: '0 13 * * *'   # pnl + renewal-invoices LIVE (6PM PKT: run renewals)
     - cron: '0 14 * * *'   # renewal-invoices reconcile (post-billing self-heal)
     - cron: '0 15 * * *'   # cloud-pharmacy-invoice-guard
@@ -64,7 +65,10 @@ jobs:
             "0 11 * * *")   poke "/api/cron/cwd-seo-report" ;;
             # 5PM PKT: add/update clients + services from paid invoices (QBO+Wave+PayPal)
             # BEFORE renewals bill an hour later, so newly-paid services invoice same day.
-            "0 12 * * *")   poke "/api/cron/tvtc-seo"; poke "/api/cron/leads-digest"; poke "/api/cron/qbo-paid-sync" ;;
+            "0 12 * * *")   poke "/api/cron/tvtc-seo"; poke "/api/cron/leads-digest" ;;
+            # 5PM-5AM PKT hourly (UTC 12-23 + 00): catch paid invoices → add/update client
+            # services near-real-time. Idempotent (watermark + dedup) so hourly is safe.
+            "0 0,12-23 * * *")  poke "/api/cron/qbo-paid-sync" ;;
             # 6PM PKT: renewals LIVE. Billing is ON (CRON_ENABLED=true in the app); a bare
             # poke creates + emails real renewal invoices and fires reminders (45/30/14/0).
             "0 13 * * *")   poke "/api/cron/pnl"; poke "/api/cron/renewal-invoices" ;;
