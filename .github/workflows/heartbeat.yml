@@ -14,8 +14,10 @@ on:
   schedule:
     - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
     # - cron: '0 10 * * *'   # ads-daily-report â€” DISABLED 2026-07-13 (Zam): stop Google Ads daily email
-    # - cron: '0 11 * * *'   # cwd-seo-report â€” DISABLED 2026-07-13 (Zam): stop CWD SEO Bot daily email
-    - cron: '0 12 * * *'   # tvtc-seo + leads-digest (5PM PKT)
+    - cron: '0 11 * * *'   # leads-digest tier 1 (4PM PKT) â€” cwd-seo-report stays DISABLED 2026-07-13 (Zam)
+    - cron: '0 12 * * *'   # tvtc-seo (5PM PKT)
+    - cron: '0 16 * * *'   # leads-digest tier 2 (9PM PKT) â€” re-nag leads untouched since tier 1
+    - cron: '0 21 * * *'   # leads-digest tier 3 / final (2AM PKT) â€” re-nag leads untouched since tier 2
     - cron: '0 0,12,18 * * *' # qbo-paid-sync 3x/day: 5PM/11PM/5AM PKT (add/update clients+services)
     - cron: '0 13 * * *'   # pnl + renewal-invoices LIVE (6PM PKT: run renewals)
     - cron: '0 14 * * *'   # renewal-invoices reconcile (post-billing self-heal)
@@ -62,10 +64,14 @@ jobs:
           case "$SCHED" in
             "0 9 * * 1")    poke "/api/clients/renewal-alerts" ;;
             # "0 10 * * *")   ads-daily-report â€” DISABLED 2026-07-13 (Zam): Google Ads daily email turned off.
-            # "0 11 * * *")   cwd-seo-report â€” DISABLED 2026-07-13 (Zam): CWD SEO Bot daily email turned off.
-            # 5PM PKT: add/update clients + services from paid invoices (QBO+Wave+PayPal)
-            # BEFORE renewals bill an hour later, so newly-paid services invoice same day.
-            "0 12 * * *")   poke "/api/cron/tvtc-seo"; poke "/api/cron/leads-digest" ;;
+            # cwd-seo-report stays DISABLED 2026-07-13 (Zam). The 0 11 slot now = leads-digest tier 1.
+            # 4PM PKT: first daily leads reminder to each rep (all due/overdue leads).
+            "0 11 * * *")   poke "/api/cron/leads-digest?tier=1" ;;
+            "0 12 * * *")   poke "/api/cron/tvtc-seo" ;;
+            # 9PM PKT: 2nd reminder â€” only leads the rep hasn't updated since tier 1.
+            "0 16 * * *")   poke "/api/cron/leads-digest?tier=2" ;;
+            # 2AM PKT: final reminder â€” only leads still untouched since tier 2.
+            "0 21 * * *")   poke "/api/cron/leads-digest?tier=3" ;;
             # 3x/day 5PM/11PM/5AM PKT (UTC 12/18/00): catch paid invoices â†’ add/update
             # client services. Idempotent (watermark + dedup) so extra runs are safe.
             "0 0,12,18 * * *")  poke "/api/cron/qbo-paid-sync" ;;
