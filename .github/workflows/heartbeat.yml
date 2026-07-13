@@ -18,7 +18,7 @@ on:
     - cron: '0 12 * * *'   # tvtc-seo (5PM PKT)
     - cron: '0 16 * * *'   # leads-digest tier 2 (9PM PKT) â€” re-nag leads untouched since tier 1
     - cron: '0 21 * * *'   # leads-digest tier 3 / final (2AM PKT) â€” re-nag leads untouched since tier 2
-    - cron: '0 0,12,18 * * *' # qbo-paid-sync 3x/day: 5PM/11PM/5AM PKT (add/update clients+services)
+    - cron: '0 12,17,22 * * *' # qbo-paid-sync 3x/day: 5PM/10PM/3AM PKT (add/update clients+services)
     - cron: '0 13 * * *'   # pnl + renewal-invoices LIVE (6PM PKT: run renewals)
     - cron: '0 14 * * *'   # renewal-invoices reconcile (post-billing self-heal)
     - cron: '0 15 * * *'   # cloud-pharmacy-invoice-guard
@@ -72,9 +72,9 @@ jobs:
             "0 16 * * *")   poke "/api/cron/leads-digest?tier=2" ;;
             # 2AM PKT: final reminder â€” only leads still untouched since tier 2.
             "0 21 * * *")   poke "/api/cron/leads-digest?tier=3" ;;
-            # 3x/day 5PM/11PM/5AM PKT (UTC 12/18/00): catch paid invoices â†’ add/update
+            # 3x/day 5PM/10PM/3AM PKT (UTC 12/17/22): catch paid invoices â†’ add/update
             # client services. Idempotent (watermark + dedup) so extra runs are safe.
-            "0 0,12,18 * * *")  poke "/api/cron/qbo-paid-sync" ;;
+            "0 12,17,22 * * *")  poke "/api/cron/qbo-paid-sync" ;;
             # 6PM PKT: renewals LIVE. Billing is ON (CRON_ENABLED=true in the app); a bare
             # poke creates + emails real renewal invoices and fires reminders (45/30/14/0).
             "0 13 * * *")   poke "/api/cron/pnl"; poke "/api/cron/renewal-invoices" ;;
