@@ -13,8 +13,7 @@ name: CWD Cron Heartbeat
 on:
   schedule:
     - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
-    # - cron: '0 10 * * *'   # ads-daily-report â€” DISABLED 2026-07-13 (Zam): stop Google Ads daily email
-    - cron: '0 11 * * *'   # leads-digest tier 1 (4PM PKT) â€” cwd-seo-report stays DISABLED 2026-07-13 (Zam)
+    - cron: '0 11 * * *'   # leads-digest tier 1 (4PM PKT)
     - cron: '0 12 * * *'   # tvtc-seo (5PM PKT)
     - cron: '0 16 * * *'   # leads-digest tier 2 (9PM PKT) â€” re-nag leads untouched since tier 1
     - cron: '0 21 * * *'   # leads-digest tier 3 / final (2AM PKT) â€” re-nag leads untouched since tier 2
@@ -63,8 +62,6 @@ jobs:
 
           case "$SCHED" in
             "0 9 * * 1")    poke "/api/clients/renewal-alerts" ;;
-            # "0 10 * * *")   ads-daily-report â€” DISABLED 2026-07-13 (Zam): Google Ads daily email turned off.
-            # cwd-seo-report stays DISABLED 2026-07-13 (Zam). The 0 11 slot now = leads-digest tier 1.
             # 4PM PKT: first daily leads reminder to each rep (all due/overdue leads).
             "0 11 * * *")   poke "/api/cron/leads-digest?tier=1" ;;
             "0 12 * * *")   poke "/api/cron/tvtc-seo" ;;
