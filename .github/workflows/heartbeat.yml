@@ -14,7 +14,6 @@ on:
   schedule:
     - cron: '0 9 * * 1'    # renewal-alerts (Mondays)
     - cron: '0 11 * * *'   # leads-digest tier 1 (4PM PKT)
-    - cron: '0 12 * * *'   # tvtc-seo (5PM PKT)
     - cron: '0 16 * * *'   # leads-digest tier 2 (9PM PKT) â€” re-nag leads untouched since tier 1
     - cron: '0 21 * * *'   # leads-digest tier 3 / final (2AM PKT) â€” re-nag leads untouched since tier 2
     - cron: '0 12,17,22 * * *' # qbo-paid-sync 3x/day: 5PM/10PM/3AM PKT (add/update clients+services)
@@ -64,7 +63,6 @@ jobs:
             "0 9 * * 1")    poke "/api/clients/renewal-alerts" ;;
             # 4PM PKT: first daily leads reminder to each rep (all due/overdue leads).
             "0 11 * * *")   poke "/api/cron/leads-digest?tier=1" ;;
-            "0 12 * * *")   poke "/api/cron/tvtc-seo" ;;
             # 9PM PKT: 2nd reminder â€” only leads the rep hasn't updated since tier 1.
             "0 16 * * *")   poke "/api/cron/leads-digest?tier=2" ;;
             # 2AM PKT: final reminder â€” only leads still untouched since tier 2.
