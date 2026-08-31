@@ -19,8 +19,6 @@ on:
     - cron: '0 12,17,22 * * *' # qbo-paid-sync 3x/day: 5PM/10PM/3AM PKT (add/update clients+services)
     - cron: '0 13 * * *'   # pnl + renewal-invoices LIVE (6PM PKT: run renewals)
     - cron: '0 14 * * *'   # renewal-invoices reconcile (post-billing self-heal)
-    - cron: '0 15 * * *'   # cloud-pharmacy-invoice-guard
-    - cron: '0 13 1 * *'   # cloud-pharmacy-invoice (1st of month)
     - cron: '*/5 * * * *'  # qbo-payment-discord (Vercel was */3; GitHub min is 5m)
   workflow_dispatch:
     inputs:
@@ -76,8 +74,10 @@ jobs:
             # 7PM PKT: post-billing RECONCILE (safe multi-source status sync QB+Wave+PayPal+
             # clients-DB; creates nothing, emails no one) so the board self-heals after billing.
             "0 14 * * *")   poke "/api/cron/renewal-invoices?reconcile=true" ;;
-            "0 15 * * *")   poke "/api/cron/cloud-pharmacy-invoice-guard" ;;
-            "0 13 1 * *")   poke "/api/cron/cloud-pharmacy-invoice" ;;
+            # cloud-pharmacy-invoice + -guard pokes REMOVED 2026-08-31.
+            # That invoice is MANUAL-ONLY (the Run Now button on /invoices).
+            # The app now refuses cron-triggered calls outright, so re-adding a
+            # poke here would only produce 403s and failure emails - never an invoice.
             "*/5 * * * *")  poke "/api/cron/qbo-payment-discord" ;;
             "")
               # Manual run. Only hit exactly what the operator asks for.
