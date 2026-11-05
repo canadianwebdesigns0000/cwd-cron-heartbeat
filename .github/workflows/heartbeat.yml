@@ -9,6 +9,7 @@ name: CWD Cron Heartbeat
 # so an early/duplicate poke is safe.
 #
 # Schedules are UTC (same as Vercel crons).
+# Re-enabled 2026-11-05 after a 60-day inactivity auto-disable (see keepalive job).
 
 on:
   schedule:
